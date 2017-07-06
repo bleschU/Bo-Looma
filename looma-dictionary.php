@@ -41,7 +41,7 @@ Description:  dictionary look-up UI for Looma 2
 
         <button class="speak"></button>
 
-</div>
+</div> 
 
 	<?php include ('includes/toolbar.php'); ?>
    	<?php include ('includes/js-includes.php'); ?>

@@ -87,8 +87,8 @@ function displayFileSearchResults(results)
         };
     }; //end displayFileSearchResults()
 
-    $(document).ready(function ()
-        { $('#search-form').submit(function( event ) {
+    $(document).ready(function () { 
+      $('#search-form').submit(function( event ) {
                   event.preventDefault();
                   $.post( "looma-database-utilities.php",
                            $( "#search-form" ).serialize(),

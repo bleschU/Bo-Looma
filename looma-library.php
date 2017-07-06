@@ -16,6 +16,7 @@ Description:  displays and navigates content folders for Looma 2
         // load: function makeActivityButton($ft, $fp, $fn, $dn, $thumb, $ch_id, $mongo_id, $url, $pg, $zoom)
         require ('includes/activity-button.php');
 ?>
+        <link rel = "Stylesheet" type = "text/css" href = "css/looma-library.css">
     </head>
 
     <body>
@@ -24,7 +25,7 @@ Description:  displays and navigates content folders for Looma 2
 <?php
 
     function folderName ($path) {
-        // strip trailing '/' then get the last dir name, by finding the remaining last '/' and substr'ing
+        // strip trailing '/' then get the last dir name, by finding the remaining last '/' and substring
          $a = explode("/", $path);
          return $a[count($a) - 2];
     };  //end FOLDERNAME()
@@ -52,6 +53,9 @@ Description:  displays and navigates content folders for Looma 2
         else return "";
     }; //end function thumbnail
 
+
+
+
             // get filepath to use for start of DIR traversal
             //this will be  "../content/" for Looma 2 Library starting folder [to be outside of web-accessible folder structure]
 
@@ -69,13 +73,163 @@ Description:  displays and navigates content folders for Looma 2
                             //should also check for 'index.php' and others?
 
     // DEBUG echo "at path " . $path . "folderName is " . folderName($path);
-    echo "<br><h3 class='title'>"; keyword('Looma Library'); echo ":  " . folderName($path) . "</h3>";
+    echo "<br><h3 class='title'>"; keyword('Looma Library'); 
+    if(foldername($path) != 'content') {echo ":  " . folderName($path);} echo "</h3>";
+  
 
+
+
+/****** creating the search tool ******/
+/**************************************/
+/**************  Search  **************/
+/**************************************/
+/*
+#search-panel has 4 sections. all optional. CSS sets them to display:none. use JS to make them visible
+the sections are #type-filter, #class-subj-filter, #sort-criteria, and #search-criteria
+
+in addition, in #type-filter, CSS sets all .typ-chk checkboxes to display:none. JS can turn on/off individual .typ-chk checkboxes.
+*/
+
+
+  /* add sources like in lesson planner*/  
+
+
+    echo "<hr style='visibility:hidden;'><div id='search-panel'>
+            <form id='search-form' action='looma-database-utilities.php' method='post'>
+                <input type='hidden' id='collection' value='activities' name='collection' />
+                <input type='hidden' id='cmd' value='search' name='cmd' />
+
+                <div id='search-bar'>
+                    <input id='search-term' type='search' name='search-term' placeholder='Enter Search Term...'>&nbsp;
+                        <button class = 'filesearch' name='search' value='value' type='submit'></button>
+                </div>";
+
+
+
+/**************************************/
+/********** File Type Fields **********/
+/**************************************/
+    echo "<div id='type-filter' class='chkbox-filter'>
+            <p>Type:</p>";
+
+    $types = array(
+        array("pdf", "img", "aud", "txb", "template", "txt", "gam", "lesson", "ss", "vid"),
+        array("pdf", "image", "audio", "textbook", "text-template", "text", "game", "lesson", "slideshow", "video"),
+        array("PDF", "Image", "Audio", "Textbook", "Text Template", "Text", "Game", "Lesson", "Slideshow", "Video"),
+    );
+    for($x = 0; $x < count($types[0]); $x++) {
+        echo "<span class='typ-chk' id='" . $types[0][$x] ."-chk'>
+                <input id='" . $types[0][$x] ."' type='checkbox' name='type[]'' value='" . $types[1][$x] . "'>
+                <label class='filter-label' for='" . $types[0][$x] . "'>" . $types[2][$x] . "</label>
+              </span>";if($x == 4){echo "<br>";}}
+
+
+
+/**************************************/
+/********* File Source  Fields ********/
+/**************************************/
+    echo "</div>
+          <div id='source-filter' class='chkbox-filter'>
+            <p>Source:</p>";
+
+    $sources = array(
+        array("ck12", "phet", "epth", "khan", "w4s"),
+        array("ck-12", "PhET", "ePaath", "khan", "wikipedia"),
+        array("CK-12", "PhET", "ePaath", "Khan", "Wikipedia"),
+    );
+    for($x = 0; $x < count($sources[0]); $x++){
+        echo "<span class='src-chk' id='" . $sources[0][$x] ."-chk'>
+                <input id='" . $sources[0][$x] ."' type='checkbox' name='type[]'' value='" . $sources[1][$x] . "'>
+                <label class='filter-label' for='" . $sources[0][$x] . "'>" . $sources[2][$x] . "</label>
+              </span>";}
+
+
+
+/**************************************/
+/*********** Grade Dropdown  **********/
+/**************************************/
+    echo "</div>
+          <div id='grade-subj-filter'> 
+            <span class='drop-menu'>Grade:<select id='grade'>
+                <option name='grade' value='all' selected>All</option>";
+    for($x = 1; $x <= 8; $x++){echo "<option name='grade' value='grade" . $x . "'>" . $x . "</option>";}
+
+
+
+/**************************************/
+/********* Subject Dropdown  **********/
+/**************************************/
+    echo "</select></span>
+          <span class='drop-menu'>Subject:<select>
+            <option name='subj' value='all' selected>All</option>";
+
+    $classInfo = array(
+        array("all", "english", "nepali", "math", "science", "socialstudies"),
+        array("All", "English", "Nepali", "Math", "Science", "Social Studies"),
+    );
+    for($x = 1; $x < count($classInfo[0]); $x++) {
+        echo "<option name='subj' value='" . $classInfo[0][$x] . "'>" . $classInfo[1][$x] . "</option>";}
+
+
+
+/**************************************/
+/*************** Sort *****************/
+/**************************************///This field isn't necessary
+    echo "</select></span></div>
+                <div id='sort-criteria'>
+                    Sort: don't really need this
+                    <input type='radio' name='sort' value='name'> Filename
+                    <input type='radio' name='sort' value='type'> Filetype
+                </div>
+            </form>
+            
+        </div>";
+
+
+
+
+//<button id='cancel-search'>Cancel</button>
+
+
+
+/**************************************/
+/*********** Search Results ***********/
+/**************************************/
+    echo "<div id='search-results'></div>";
+
+
+
+
+/**************************************/
+/********** Folder Hierarchy **********/
+/************* Navigation *************/
+/**************************************/
+if(foldername($path) == 'content') {
+        echo   "<br>
+                <div>
+                    <fieldset>
+                        <ul>
+                            <legend>Content:</legend>
+                            <li>Science</li>
+                            <li>Math</li>
+                            <li>Social Studies</li>
+                            <li>English</li>
+                            <li>Nepali</li>
+                        </ul>
+                    </fieldset>
+                </div>
+                <button id='toggle-database' class='toggle'></button>";} 
+
+
+/**************************************/
     //  first list directories in this directory
-    echo "<br><table id='dir-table'><tr>";
+    
+    
+    echo "<table id='dir-table'><tr>";
+    if(foldername($path) == 'content') {echo "<style>#dir-table{display: none;}</style>";}
+
     $buttons = 1;
     $maxButtons = 3;
-
     // iterate through the files in this DIR and make buttons for each included DIR
     if ( ! $ep ) {
 
@@ -83,6 +237,8 @@ Description:  displays and navigates content folders for Looma 2
 
 /*************** iterate through the files in this DIR and make buttons for the DIRs ******************/
 /******************************************************************************************************/
+
+
 /********************************/
 /**********  DIRs  **************/
 /********************************/
@@ -143,7 +299,7 @@ Description:  displays and navigates content folders for Looma 2
                     echo "<td><a href='looma-library.php?fp=" . $path . $file .
                     "/'><button class='activity img zeroScroll'>" .
                     thumb_image($path . $file) . $file . "</button></a></td>";
-                }
+        }
         $buttons++; if ($buttons > $maxButtons) {$buttons = 1; echo "</tr><tr>";};
 
             };
@@ -156,12 +312,12 @@ Description:  displays and navigates content folders for Looma 2
 
     //now list files in this directory
 
-    echo "<br><table id='file-table'><tr>";
+    if(foldername($path) == 'content') {echo "<br>";} echo "<table id='file-table'><tr>";
     $buttons = 1;
     $maxButtons = 3;
     $specials = array("_", "-", ".", "/", "'");
 
-echo "<hr>";
+    if(foldername($path) == 'content') {echo "<hr>";}
     // iterate through the files in this DIR and make buttons for each included FILE
 
     //TODO: should gather all the filenames into an array and sort it, use (natcasesort() or multisort(), before making the buttons
@@ -180,7 +336,7 @@ echo "<hr>";
             //all of the entries from the edited_videos collection in the database
             $editedVideos = $edited_videos_collection->find();
 
-             foreach ($editedVideos as $doc) {
+                foreach ($editedVideos as $doc) {
                     echo "<td>";
                     $dn = $doc['dn'];
                     $fn = $doc['vn'] . ".mp4"; //NOTE: BUG: assumes all videos are .mp4. should save extension with evi collection
@@ -195,7 +351,7 @@ echo "<hr>";
 
                     echo "</td>";
                     $buttons++; if ($buttons > $maxButtons) {$buttons = 1; echo "</tr><tr>";};
-            }
+                }
         }  //end IF edited videos
 
         else
@@ -366,10 +522,11 @@ echo "<hr>";
             }
         echo "</tr></table>";
 ?>
-
+        
     </div>
 
     <?php include ('includes/toolbar.php'); ?>
     <?php include ('includes/js-includes.php'); ?>
+    <!--<script src="js/jquery-ui.min.js"></script>-->
     <script src="js/looma-library.js"></script>
     </body>
