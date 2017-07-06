@@ -14,7 +14,9 @@ Description:
 // utility JS functions used by many LOOMA pages
 /*defines:
  * LOOMA.playMedia()
+ * LOOMA.makeActivityButton()
  * LOOMA.typename()
+ * LOOMA.thumbnail()
  * LOOMA.capitalize()
  * LOOMA.setStore()
  * LOOMA.readStore()
@@ -53,6 +55,7 @@ var LOOMA = (function() {
 //this allows us to define LOOMA.playMedia() [and other LOOMA functions] that won't cause name conflicts
 
 playMedia : function(button) {
+    console.log("here");
     switch (button.getAttribute("data-ft")) {
         case "video":
         case "mp4":
@@ -150,11 +153,86 @@ playMedia : function(button) {
     } //end SWITCH
 }, //end LOOMA.playMedia()
 
+makeActivityButton: function (id, appendToDiv) {
+    // given an ID for an activity in the activities collection in mongo,
+    // attach a button [clickable button that launches that activity] to "appendToDiv"
+
+    //post to looma-database-utilities.php with cmd='openByID' and id=id
+    // and result function makes a DIV and calls "succeed(div)"
+             $.post("looma-database-utilities.php",
+                {cmd: 'openByID', collection: 'activities', id: id},
+                function(result) {
+                        var fp = (result.fp) ? 'data-fp=\"' + result.fp + '\"' : null;
+                        var $newButton = $(
+                                '<button class="activity play img" ' +
+                                'data-fn="' + result.fn + '" ' +
+                                fp +
+                                'data-ft="' + result.ft + '" ' +
+                                'data-dn="' + result.dn + '" >'
+                           );
+
+                        $newButton.append($('<img src="' + LOOMA.thumbnail(result.fn, result.fp, result.ft) + '">'));
+                        $newButton.append($('<span>').text(result.dn));
+                        $newButton.click(function() {LOOMA.playMedia(this);});
+                        $newButton.appendTo(appendToDiv);
+
+                        //need to attach clickhandler (LOOMA.playMedia)
+                    },
+                'json'
+              );
+        }, //end makeActivityButton()
 
 
+thumbnail: function (filename, filepath, filetype) {
+            //builds a filepath/filename for the thumbnail of this "filename" based on type
+            var thumbnail_prefix;
+            var path;
+            var imgsrc;
+            var homedirectory = '../';
+
+            imgsrc = "";
+
+            if (filetype == "mp3") {  //audio
+                if (filepath) path = filepath; else path = homedirectory + 'content/audio/';
+                imgsrc = path + "thumbnail.png";
+            }
+            else if (filetype == "mp4" || filetype == "mp5" || filetype == "m4v" || filetype == "mov" || filetype == "video") { //video
+                thumbnail_prefix = filename.substr(0, filename.indexOf('.'));
+                if (filepath) path = filepath; else path = homedirectory + 'content/videos/';
+                imgsrc = path + thumbnail_prefix + "_thumb.jpg";
+            }
+            else if (filetype == "jpg"  || filetype == "gif" || filetype == "png" || filetype == "image" ) { //picture
+                thumbnail_prefix = filename.substr(0, filename.indexOf('.'));
+                if (filepath) path = filepath; else path = homedirectory + 'content/pictures/';
+                imgsrc = path + thumbnail_prefix + "_thumb.jpg";
+            }
+            else if (filetype == "pdf") { //pdf
+                thumbnail_prefix = filename.substr(0, filename.indexOf('.'));
+                if (filepath) path = filepath; else path = homedirectory + 'content/pdfs/';
+                imgsrc = path + thumbnail_prefix + "_thumb.jpg";
+            }
+            else if (filetype == "html") { //html
+                thumbnail_prefix = filename.substr(0, filename.indexOf('.'));
+                if (filepath) path = filepath; else path = homedirectory + 'content/html/';
+                imgsrc = path + thumbnail_prefix + "_thumb.jpg";
+            }
+            else if (filetype == "EP") {
+                imgsrc = homedirectory + "content/epaath/activities/" + item.fn + "/thumbnail.jpg";
+            }
+            else if (filetype == "text") {
+                imgsrc = "images/textfile.png";
+            }
+            else if (filetype == "slideshow") {
+                imgsrc = "images/play-slideshow-icon.png";
+            }
+            else if (filetype == "looma") {
+                imgsrc = item.thumb;
+            };
+
+            return imgsrc;
+        }, //end thumbnail()
 
 //returns an english describing the file type, given a FT
-
 typename: function(ft) {
     var names = {
         mp4: 'video',
@@ -844,10 +922,9 @@ LOOMA.closePopup = function() {
 };  //end closePopup()
 
 
-/* NOTE on LOOMA popups: nested calls to popups dont work
- *      fix this sometime?
- */
-/**
+/* NOTE on LOOMA popups: nested calls to popups dont work - -   fix this sometime?  */
+
+/**  LOOMA.alert()
  * This function creates a popup message box that can be dismissed by the user.
  * @param msg - The message the user is presented.
  * @param time (optional)- a delay in seconds after which the popup is automatically closed
@@ -888,7 +965,7 @@ LOOMA.alert = function(msg, time, notTransparent){
     };
 };  //end alert()
 
-/**
+/**    LOOMA.confirm()
  * Prompts the user to confirm a message.
  * @param msg - The message the user is presented in question format.
  * @param confirmed - A function to call if the user confirms
@@ -901,7 +978,7 @@ LOOMA.confirm = function(msg, confirmed, canceled, notTransparent) {
         "<button class='popup-button' id='dismiss-popup'><b>X</b></button> " + msg +
         "<button id='close-popup' class='popup-button'>" + LOOMA.translatableSpans("cancel", "रद्द गरेर") + "</button>" +
         "<button id='confirm-popup' class='popup-button'>"+
-        LOOMA.translatableSpans("confirm", "निश्चय गर्नुहोस्") +"</button></div>");
+        LOOMA.translatableSpans("confirm", "निश्चय गर्नुहोस्") +"</button></div>").hide().fadeIn(1000);
 
     $('#confirm-popup').click(function() {
         //$("#confirm-popup").off('click');
@@ -917,8 +994,8 @@ LOOMA.confirm = function(msg, confirmed, canceled, notTransparent) {
    });
 };  //end confirm()
 
-/**
- /**
+
+ /**     LOOMA.prompt()
  * Prompts the user to enter text.
  * @param msg - The message the user is presented, prompting them to enter text.
  * @param callback - A function where the user's text response will be sent.
